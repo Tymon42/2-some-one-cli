@@ -81,8 +81,8 @@ func PlayAudio(path, name string) {
 	grid.Set(
 		ui.NewRow(0.1, NameBox),
 		ui.NewRow(0.8,
-			ui.NewRow(0.1, volumeBar),
-			ui.NewRow(0.9, ctrlList),
+			ui.NewRow(0.2, volumeBar),
+			ui.NewRow(0.8, ctrlList),
 		),
 		// ui.NewRow(0.1),
 	)

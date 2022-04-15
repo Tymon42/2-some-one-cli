@@ -63,7 +63,7 @@ func Home() {
 	grid.Set(
 		ui.NewRow(1.0/2,
 			ui.NewRow(0.6, Logo),
-			ui.NewRow(0.2, title),
+			ui.NewRow(0.4, title),
 		),
 		ui.NewRow(1.0/6, permitPane),
 	)
