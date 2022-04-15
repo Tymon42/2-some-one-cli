@@ -52,13 +52,9 @@ func PlayAudio(path, name string) {
 	NameBox.Text = "Audio :: " + name
 	NameBox.Border = false
 	NameBox.TextStyle.Fg = ui.ColorRed
-	NameBox.SetRect(10, 9, 149, 12)
 
-	volumeBar:=widgets.NewBarChart()
-	volumeBar.BarWidth = 1
-	volumeBar.Labels = []string{"Volume"}
-	volumeBar.BarColors = []ui.Color{ui.ColorRed}
-	volumeBar.NumStyles = []ui.Style{ui.NewStyle(ui.ColorBlack)}
+	volumeBar:=widgets.NewGauge()
+	volumeBar.BarColor=ui.ColorGreen
 
 	ctrlList := widgets.NewList()
 	ctrlList.Title = "CONTROLS"
@@ -76,8 +72,6 @@ func PlayAudio(path, name string) {
 	}
 	ctrlList.TextStyle = ui.NewStyle(ui.ColorRed)
 	ctrlList.WrapText = true
-	// ctrlList.SetRect(20, 17, 110, 27)
-	// ctrlList.SetRect(20, 13, 110, 23)
 	ctrlList.Border = true
 
 	grid := ui.NewGrid()
@@ -87,8 +81,8 @@ func PlayAudio(path, name string) {
 	grid.Set(
 		ui.NewRow(0.1, NameBox),
 		ui.NewRow(0.8,
-			ui.NewCol(0.1, volumeBar),
-			ui.NewCol(0.9, ctrlList),
+			ui.NewRow(0.1, volumeBar),
+			ui.NewRow(0.9, ctrlList),
 		),
 		// ui.NewRow(0.1),
 	)
@@ -152,7 +146,7 @@ func PlayAudio(path, name string) {
 			}
 		case <-ticker:
 			volume, _ := player.Volume()
-			volumeBar.Data = []float64{float64(volume)}
+			volumeBar.Percent = volume
 			ui.Render(grid)
 		}
 	}
