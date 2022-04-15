@@ -3,6 +3,7 @@ package plyaudio
 import (
 	"log"
 	"os"
+	"time"
 
 	vlc "github.com/adrg/libvlc-go"
 	ui "github.com/gizak/termui/v3"
@@ -53,6 +54,12 @@ func PlayAudio(path, name string) {
 	NameBox.TextStyle.Fg = ui.ColorRed
 	NameBox.SetRect(10, 9, 149, 12)
 
+	volumeBar:=widgets.NewBarChart()
+	volumeBar.BarWidth = 1
+	volumeBar.Labels = []string{"Volume"}
+	volumeBar.BarColors = []ui.Color{ui.ColorRed}
+	volumeBar.NumStyles = []ui.Style{ui.NewStyle(ui.ColorBlack)}
+
 	ctrlList := widgets.NewList()
 	ctrlList.Title = "CONTROLS"
 	ctrlList.TitleStyle.Modifier = ui.ModifierBold
@@ -70,59 +77,84 @@ func PlayAudio(path, name string) {
 	ctrlList.TextStyle = ui.NewStyle(ui.ColorRed)
 	ctrlList.WrapText = true
 	// ctrlList.SetRect(20, 17, 110, 27)
-	ctrlList.SetRect(20, 13, 110, 23)
+	// ctrlList.SetRect(20, 13, 110, 23)
 	ctrlList.Border = true
 
-	ui.Render(NameBox, ctrlList)
+	grid := ui.NewGrid()
+	termWidth, termHeight := ui.TerminalDimensions()
+	grid.SetRect(0, 0, termWidth, termHeight)
+
+	grid.Set(
+		ui.NewRow(0.1, NameBox),
+		ui.NewRow(0.8,
+			ui.NewCol(0.1, volumeBar),
+			ui.NewCol(0.9, ctrlList),
+		),
+		// ui.NewRow(0.1),
+	)
+
+	ui.Render(grid)
+	// ui.Render(NameBox, ctrlList)
 
 	uiEvents := ui.PollEvents()
+	ticker := time.NewTicker(time.Second).C
 	for player.WillPlay() {
-		e := <-uiEvents
-		switch e.ID {
-		case "p", "<Space>":
-			player.TogglePause()
-			break
-		case "s", "<Escape>":
-			player.Stop()
-			ui.Clear()
-			ui.Close()
-			os.Exit(0)
-			break
-		case "<Up>":
-			volume, err := player.Volume()
-			if err != nil {
-				log.Fatal(err)
+		select {
+		case e := <-uiEvents:
+			switch e.ID {
+			case "p", "<Space>":
+				player.TogglePause()
+				break
+			case "s", "<Escape>":
+				player.Stop()
+				ui.Clear()
+				ui.Close()
+				os.Exit(0)
+				break
+			case "<Up>":
+				volume, err := player.Volume()
+				if err != nil {
+					log.Fatal(err)
+				}
+				player.SetVolume(volume + 5)
+				break
+			case "<Down>":
+				volume, err := player.Volume()
+				if err != nil {
+					log.Fatal(err)
+				}
+				player.SetVolume(volume - 5)
+				break
+			case "<Left>", "a":
+				sec, err := player.MediaTime()
+				if err != nil {
+					log.Fatal(err)
+				}
+				player.SetMediaTime(sec - 10000)
+				player.Play()
+				break
+			case "<Right>", "d":
+				sec, err := player.MediaTime()
+				if err != nil {
+					log.Fatal(err)
+				}
+				player.SetMediaTime(sec + 10000)
+			case "q", "<C-c>":
+				player.Release()
+				ui.Clear()
+				ui.Close()
+				os.Exit(0)
+			case "<Resize>":
+				payload := e.Payload.(ui.Resize)
+				grid.SetRect(0, 0, payload.Width, payload.Height)
+				ui.Clear()
+				ui.Render(grid)
 			}
-			player.SetVolume(volume + 5)
-			break
-		case "<Down>":
-			volume, err := player.Volume()
-			if err != nil {
-				log.Fatal(err)
-			}
-			player.SetVolume(volume - 5)
-			break
-		case "<Left>", "a":
-			sec, err := player.MediaTime()
-			if err != nil {
-				log.Fatal(err)
-			}
-			player.SetMediaTime(sec - 10000)
-			player.Play()
-			break
-		case "<Right>", "d":
-			sec, err := player.MediaTime()
-			if err != nil {
-				log.Fatal(err)
-			}
-			player.SetMediaTime(sec + 10000)
-		case "q", "<C-c>":
-			player.Release()
-			ui.Clear()
-			ui.Close()
-			os.Exit(0)
+		case <-ticker:
+			volume, _ := player.Volume()
+			volumeBar.Data = []float64{float64(volume)}
+			ui.Render(grid)
 		}
-
 	}
 
 	quit := make(chan struct{})
