@@ -54,6 +54,7 @@ func PlayAudio(path, name string) {
 	NameBox.TextStyle.Fg = ui.ColorRed
 
 	volumeBar:=widgets.NewGauge()
+	volumeBar.Label = "Volume"
 	volumeBar.BarColor=ui.ColorGreen
 
 	ctrlList := widgets.NewList()

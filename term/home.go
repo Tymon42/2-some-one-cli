@@ -3,6 +3,7 @@ package term
 import (
 	"log"
 	"os"
+	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -24,7 +25,7 @@ func Home() {
 	defer ui.Close()
 
 	Logo := widgets.NewParagraph()
-	Logo.SetRect(40, 0, 400, 9)
+	// Logo.SetRect(40, 0, 400, 9)
 	Logo.Border = false
 	Logo.TextStyle.Fg = ui.ColorRed
 	Logo.Text = `
@@ -69,41 +70,42 @@ func Home() {
 	)
 
 	ui.Render(grid)
-	// ui.Render(Logo, title, permitPane)
-
 
 	menuEvents := ui.PollEvents()
+	ticker := time.NewTicker(time.Second).C
 	for {
 		select {
 		case e := <-menuEvents:
-		switch e.ID {
-		case "<Escape>":
-			ui.Clear()
-			ui.Close()
-			os.Exit(0)
-		case "<Left>":
-			permitPane.FocusLeft()
-			ui.Clear()
-			ui.Render(grid)
-			if e.Type == ui.KeyboardEvent && e.ID == "<Enter>" {
+			switch e.ID {
+			case "<Escape>":
+				ui.Clear()
+				ui.Close()
+				os.Exit(0)
+			case "<Left>":
+				permitPane.FocusLeft()
+				ui.Clear()
+				ui.Render(grid)
+				if e.Type == ui.KeyboardEvent && e.ID == "<Enter>" {
+					renderTabOne()
+				}
+			case "<Right>":
+				permitPane.FocusRight()
+				ui.Clear()
+				ui.Render(grid)
+				if e.Type == ui.KeyboardEvent && e.ID == "<Enter>" {
+					renderTabOne()
+				}
+			case "<Resize>":
+				payload := e.Payload.(ui.Resize)
+				grid.SetRect(0, 0, payload.Width, payload.Height)
+				ui.Clear()
+				ui.Render(grid)
+			case "<Enter>":
 				renderTabOne()
 			}
-		case "<Right>":
-			permitPane.FocusRight()
+		case <-ticker:
 			ui.Clear()
 			ui.Render(grid)
-			if e.Type == ui.KeyboardEvent && e.ID == "<Enter>" {
-				renderTabOne()
-			}
-		case "<Resize>":
-			payload := e.Payload.(ui.Resize)
-			grid.SetRect(0, 0, payload.Width, payload.Height)
-			ui.Clear()
-			ui.Render(grid)
-		case "<Enter>":
-			renderTabOne()
 		}
-
-	}
 	}
 }

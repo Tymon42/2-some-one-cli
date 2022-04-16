@@ -1,1 +1,5 @@
-2-some-one-cli.exe
+*.exe
+/2SOMEone/*
+/2SOMEone
+/.vscode
+/.vscode/*
