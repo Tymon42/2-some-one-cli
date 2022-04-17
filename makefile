@@ -3,7 +3,7 @@ GOARCH = amd64
 QUORUM_BIN_NAME=quorum
 # LIBVLC = C:\Users\why00\Documents\tools\libvlc
 # LIBVLC = C:\Users\why00\Documents\tools\vlc-3.0.16
-APPDIR = ./2SOMEone
+APPDIR = 2SOMEone
 
 2SOMEone:
 	mkdir ${APPDIR}
