@@ -29,7 +29,8 @@ pidch := make(chan int)
 	peertracer := fmt.Sprintf("%s/%s", rumdata, nodename+"tracer.json")
 	peerport := 7004
 	peerapiport := 8004
-	peer := "/ip4/47.96.96.172/tcp/10666/p2p/16Uiu2HAmTHX2YpRTZs4BwcXACGTvJoCRpYWa7paereACj9dduemJ"
+	// peer := "/ip4/47.96.96.172/tcp/10666/p2p/16Uiu2HAmTHX2YpRTZs4BwcXACGTvJoCRpYWa7paereACj9dduemJ"
+	peer := "/ip4/47.96.96.172/tcp/10666/p2p/16Uiu2HAkxRLEaRonNf4eVdNGdwxE5nh4vGNAUUbjaH8K8HR3yBsC"
 	util.Fork(pidch, out_str, KeystorePassword, ".\\quorum.exe", "-peername", nodename, "-listen", fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", peerport), "-apilisten", fmt.Sprintf(":%d", peerapiport), "-peer", peer, "-configdir", confdir, "-keystoredir", peerkeystoredir, "-datadir", userdatadir, "-jsontracer", peertracer, "-debug=true")
 
 	
