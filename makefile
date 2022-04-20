@@ -2,10 +2,10 @@ RUMDIR = quorum
 GOARCH = amd64
 QUORUM_BIN_NAME=quorum
 APPDIR = 2SOMEone
-LIBVLC = libvlc
+# LIBVLC = libvlc
 
-cur_mkfile := $(abspath $(lastword $(MAKEFILE_LIST)))
-cur_makefile_path=$(dir $(cur_mkfile))
+# cur_mkfile := $(abspath $(lastword $(MAKEFILE_LIST)))
+# cur_makefile_path=$(dir $(cur_mkfile))
 # $(info ${cur_makefile_path})
 
 2SOMEone:
@@ -19,8 +19,9 @@ quorum.exe:
 # run-peer.exe:
 # 	cd ./run-peer && go build -o ../${APPDIR}/run-peer.exe
 # 	cd ..
-cli.exe:export CGO_LDFLAGS=-L${cur_makefile_path}/${LIBVLC}
-cli.exe:export CGO_CFLAGS=-I${cur_makefile_path}/${LIBVLC}/include
+
+# cli.exe:export CGO_LDFLAGS=-L${cur_makefile_path}/${LIBVLC}
+# cli.exe:export CGO_CFLAGS=-I${cur_makefile_path}/${LIBVLC}/include
 cli.exe:
 	go build -o ./${APPDIR}/cli.exe main.go
 
