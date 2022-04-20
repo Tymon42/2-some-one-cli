@@ -1,3 +1,6 @@
 [submodule "quorum"]
 	path = quorum
 	url = https://github.com/rumsystem/quorum
+[submodule "libvlc"]
+	path = libvlc
+	url = https://github.com/Tymon42/libvlc.git
