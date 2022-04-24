@@ -14,10 +14,13 @@ type WsClient struct {
 	Client *websocket.Conn
 }
 
-func New() *WsClient {
+func New() (*WsClient, error) {
 	dialer := websocket.Dialer{}
-	connect, _, _ := dialer.Dial("ws://cloud.cunoe.com:8800/ws", nil)
-	return &WsClient{Client: connect}
+	connect, _, err := dialer.Dial("ws://cloud.cunoe.com:8800/ws", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &WsClient{Client: connect}, nil
 }
 
 func (wsc WsClient) Close() {

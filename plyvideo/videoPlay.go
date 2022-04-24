@@ -3,7 +3,9 @@ package plyvideo
 import (
 	"log"
 	"os"
+	"time"
 
+	"2-some-one-cli/wsclient"
 	vlc "github.com/adrg/libvlc-go"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -11,6 +13,15 @@ import (
 
 //PlayVideo : 	Function for video playback
 func PlayVideo(path, name string) {
+
+	wsc,err:=wsclient.New()
+	if err!=nil{
+		log.Fatal(err)
+	}
+
+	statu := make(chan wsclient.Message)
+	go wsc.Read(statu)
+
 	if err := vlc.Init("--quiet"); err != nil {
 		log.Fatal(err)
 	}
@@ -77,8 +88,8 @@ func PlayVideo(path, name string) {
 
 	grid.Set(
 		ui.NewRow(1.0/5, NameBox),
-		ui.NewRow(2.0/3,
-			ui.NewRow(1.0/3, ctrlList),
+		ui.NewRow(4.0/5,
+			ui.NewRow(1.0, ctrlList),
 		),
 	)
 
@@ -88,23 +99,25 @@ func PlayVideo(path, name string) {
 	for player.WillPlay() {
 		e := <-uiEvents
 		switch e.ID {
-		case "C-p":
-			// if player.IsPlaying() {
-			// player.SetPause(true)
-			player.TogglePause()
-			// }
-			// TODO: Send Pause sign
-			break
 		case "<Space>":
-			// if player.IsPlaying() == false {
-				// player.SetPause(false)
 			player.TogglePause()
-			// }
-			// TODO: Send Play sign
 			break
-		
-		case "C-r":
-			
+		case "r":
+			Statu := <- statu
+			nowTime := time.Now().UnixNano() / 1e6
+			settime := (Statu.Ts - nowTime) + int64(Statu.MediaTime)
+			player.SetMediaTime(int(settime))
+			break
+		case "u":
+			sec, err := player.MediaTime()
+			if err != nil {
+				log.Fatal(err)
+			}
+			nowTime := time.Now().UnixNano() / 1e6
+			var msg wsclient.Message
+			msg.MediaTime = sec
+			msg.Ts = nowTime
+			wsc.Writer(msg)
 			break
 		case "s", "<Escape>":
 			player.Stop()

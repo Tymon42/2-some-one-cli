@@ -50,7 +50,7 @@ func Home() {
 		case 0:
 			Play("D:\\8.mp3", "D:\\8.mp3", "Audio")
 		case 1:
-			Play("C:\\Users\\why00\\Videos\\aa\\aa.mp4", "时间刻度视频", "Video")
+			Play("C:\\Users\\why00\\Videos\\aa\\aa.mp4", "Time Sync", "Video")
 		case 2:
 			ui.Clear()
 			ui.Close()
