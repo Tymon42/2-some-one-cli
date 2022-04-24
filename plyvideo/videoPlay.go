@@ -11,7 +11,7 @@ import (
 
 //PlayVideo : 	Function for video playback
 func PlayVideo(path, name string) {
-	if err := vlc.Init(); err != nil {
+	if err := vlc.Init("--quiet"); err != nil {
 		log.Fatal(err)
 	}
 	defer vlc.Release()
@@ -48,10 +48,10 @@ func PlayVideo(path, name string) {
 	defer ui.Close()
 
 	NameBox := widgets.NewParagraph()
-	NameBox.Text = "Audio :: " + name
+	NameBox.Text = "Vedio :: " + name
 	NameBox.Border = false
 	NameBox.TextStyle.Fg = ui.ColorRed
-	NameBox.SetRect(10, 9, 149, 12)
+	// NameBox.SetRect(10, 9, 149, 12)
 
 	ctrlList := widgets.NewList()
 	ctrlList.Title = "CONTROLS"
@@ -67,21 +67,44 @@ func PlayVideo(path, name string) {
 	}
 	ctrlList.TextStyle = ui.NewStyle(ui.ColorRed)
 	ctrlList.WrapText = true
-	ctrlList.SetRect(20, 17, 110, 25)
+	// ctrlList.SetRect(20, 17, 110, 25)
 	ctrlList.Border = true
 
-	ui.Render(NameBox, ctrlList)
+	// ui.Render(NameBox, ctrlList)
+	grid:=ui.NewGrid()
+	termWidth, termHeight := ui.TerminalDimensions()
+	grid.SetRect(0, 0, termWidth, termHeight)
+
+	grid.Set(
+		ui.NewRow(1.0/5, NameBox),
+		ui.NewRow(2.0/3,
+			ui.NewRow(1.0/3, ctrlList),
+		),
+	)
+
+	ui.Render(grid)
 
 	uiEvents := ui.PollEvents()
 	for player.WillPlay() {
 		e := <-uiEvents
 		switch e.ID {
-		case "p", "<Space>":
-			if player.IsPlaying() {
-				player.SetPause(true)
-			} else {
-				player.SetPause(false)
-			}
+		case "C-p":
+			// if player.IsPlaying() {
+			// player.SetPause(true)
+			player.TogglePause()
+			// }
+			// TODO: Send Pause sign
+			break
+		case "<Space>":
+			// if player.IsPlaying() == false {
+				// player.SetPause(false)
+			player.TogglePause()
+			// }
+			// TODO: Send Play sign
+			break
+		
+		case "C-r":
+			
 			break
 		case "s", "<Escape>":
 			player.Stop()

@@ -14,7 +14,7 @@ import (
 
 var (
 	_, b, _, _ = runtime.Caller(0)
-	rumdata    = filepath.Join(filepath.Dir(b), "../")
+	root    = filepath.Join(filepath.Dir(b), "../")
 
 // basepath = filepath.Dir(b)
 )
@@ -27,7 +27,7 @@ func RunPeer() {
 
 	// pidch := make(chan int)
 	// stdoutline := make(chan string)
-	root := filepath.Join(rumdata, "2SOMEone")
+	root := filepath.Join(root, "2SOMEone")
 	// root := ".\\"
 	peername := "user2"
 	confdir := fmt.Sprintf("%s\\%s", root, "config")

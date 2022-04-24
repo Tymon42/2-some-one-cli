@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	// "github.com/tymon42/2-some-one-cli/util"
 	vlc "github.com/adrg/libvlc-go"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -12,33 +13,45 @@ import (
 
 //PlayAudio : 	Function for audio playback
 func PlayAudio(path, name string) {
-
 	if err := vlc.Init("--no-video", "--quiet"); err != nil {
 		log.Fatal(err)
 	}
 	defer vlc.Release()
 
-	player, err := vlc.NewPlayer()
+	lplayer, err := vlc.NewListPlayer()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer func() {
-		player.Stop()
-		player.Release()
+		lplayer.Stop()
+		lplayer.Release()
 	}()
 
-	media, err := player.LoadMediaFromPath(path)
+	list, err := vlc.NewMediaList()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer media.Release()
+	defer list.Release()
 
-	err = player.Play()
+	err = list.AddMediaFromPath(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	manager, err := player.EventManager()
+	if err = lplayer.SetMediaList(list); err != nil {
+		log.Fatal(err)
+	}
+
+	manager, err := lplayer.EventManager()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = lplayer.Play(); err != nil {
+		log.Fatal(err)
+	}
+
+	player, err := lplayer.Player()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,9 +66,9 @@ func PlayAudio(path, name string) {
 	NameBox.Border = false
 	NameBox.TextStyle.Fg = ui.ColorRed
 
-	volumeBar:=widgets.NewGauge()
+	volumeBar := widgets.NewGauge()
 	volumeBar.Label = "Volume"
-	volumeBar.BarColor=ui.ColorGreen
+	volumeBar.BarColor = ui.ColorGreen
 
 	ctrlList := widgets.NewList()
 	ctrlList.Title = "CONTROLS"
@@ -93,7 +106,7 @@ func PlayAudio(path, name string) {
 
 	uiEvents := ui.PollEvents()
 	ticker := time.NewTicker(time.Second).C
-	for player.WillPlay() {
+	for player.IsPlaying() {
 		select {
 		case e := <-uiEvents:
 			switch e.ID {
@@ -157,7 +170,7 @@ func PlayAudio(path, name string) {
 		close(quit)
 	}
 
-	eventID, err := manager.Attach(vlc.MediaPlayerEndReached, eventCallback, nil)
+	eventID, err := manager.Attach(vlc.MediaListPlayerPlayed, eventCallback, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
