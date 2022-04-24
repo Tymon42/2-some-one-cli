@@ -2,7 +2,7 @@ package wsclient
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
+	"github.com/gorilla/websocket" //这里使用的是 gorilla 的 websocket 库
 	"log"
 	"time"
 )
@@ -10,7 +10,8 @@ import (
 type Message struct {
 	Username string `json:"username"`
 	Code     string `json:"code"`
-	Times    string `json:"times"`
+	Data     string `json:"data"`
+	Ts       int64  `json:"ts"`
 }
 
 func wsClient() {
@@ -59,23 +60,25 @@ func wsClient() {
 			//同步函数 其中message应是同步的时间
 			fmt.Println(msg.Times)
 		}
+		//fmt.Printf("recv: %s %s %s %d", msg.Username, msg.Code, msg.Data, msg.Ts)
 	}
 }
 
 func tickWriter(connect *websocket.Conn) {
 	var username string
 	var code string
-	var times string
+	var data string
 	for {
 		//向客户端发送类型为文本的数据
-		fmt.Println("Please enter your code: // username code times")
-		fmt.Scanf("%s %f %d", &username, &code, &times)
-		msg := &Message{username, code, times}
+		fmt.Println("Please enter your code: // username code data")
+
+		fmt.Scanf("%s %s %s", &username, &code, &data)
+		ts := time.Now().UnixNano() / 1e6
+		msg := &Message{username, code, data, ts}
 		err := connect.WriteJSON(msg)
 		if err != nil {
 			log.Printf("error: %v", err)
 		}
-		//休息一秒
-		time.Sleep(time.Second)
+		time.Sleep(1)
 	}
 }
