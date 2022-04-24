@@ -16,6 +16,11 @@ type WsClient struct {
 	client *ws.Conn
 }
 
+func New() *WsClient {
+	connect, _, _ := dialer.Dial("ws://cloud.cunoe.com:8800/ws", nil)
+	return &WsClient{client: connect}
+}
+
 func (wsc WsClient) wsClient() *ws.Conn {
 	//创建一个拨号器，也可以用默认的 websocket.DefaultDialer
 	dialer := websocket.Dialer{}
