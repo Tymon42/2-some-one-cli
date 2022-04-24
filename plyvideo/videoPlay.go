@@ -105,15 +105,15 @@ func PlayVideo(path, name string) {
 		case "r":
 			Statu := <- statu
 			nowTime := time.Now().UnixNano() / 1e6
-			settime := (Statu.Ts - nowTime) + int64(Statu.MediaTime)
-			player.SetMediaTime(int(settime))
+			settime := int(nowTime - Statu.Ts) + (Statu.MediaTime)
+			player.SetMediaTime(settime)
 			break
 		case "u":
+			nowTime := time.Now().UnixNano() / 1e6
 			sec, err := player.MediaTime()
 			if err != nil {
 				log.Fatal(err)
 			}
-			nowTime := time.Now().UnixNano() / 1e6
 			var msg wsclient.Message
 			msg.MediaTime = sec
 			msg.Ts = nowTime
