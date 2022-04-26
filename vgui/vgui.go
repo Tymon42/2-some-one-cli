@@ -70,7 +70,7 @@ func vgui(w fyne.Window) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	setPlayerWindow(player)
 	statu := make(chan wsclient.Message)
 	go wsc.Read(statu)
 
@@ -135,6 +135,7 @@ func vgui(w fyne.Window) {
 				return
 			}
 			player.Play()
+			w.Resize(fyne.NewSize(500, 250))
 
 			//endUpdateProgress <- false
 		}),
@@ -183,6 +184,7 @@ func vgui(w fyne.Window) {
 		}),
 		widget.NewToolbarAction(theme.MediaStopIcon(), func() {
 			player.Stop()
+			w.Resize(fyne.NewSize(1000, 600))
 		}),
 		widget.NewToolbarSpacer(),
 	)
@@ -193,6 +195,10 @@ func vgui(w fyne.Window) {
 
 	browse_file := widget.NewButton("BrowseFile", func() {
 		fd := dialog.NewFileOpen(func(uriReadCloser fyne.URIReadCloser, err error) {
+			if uriReadCloser == nil {
+				log.Println("Cancelled")
+				return
+			}
 			path = change(uriReadCloser.URI().Path())
 			label2.Text = uriReadCloser.URI().Name()
 			label2.Refresh()
@@ -242,4 +248,8 @@ func updateTime(p *widget.ProgressBar, vp *vlc.Player, label *widget.Label) {
 		time.Sleep(1 * time.Second)
 
 	}
+}
+
+func setPlayerWindow(player *vlc.Player) error {
+	return player.SetXWindow(2000)
 }
