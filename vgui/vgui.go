@@ -76,11 +76,13 @@ func vgui(w fyne.Window) {
 
 	//lblTimeUsed = widget.NewLabel("")
 	lblVolume := widget.NewLabel("Volume Now: 80")
-	//progress := widget.NewProgressBar()
-	//progress.Min = 0
-	//progress.Max = 1
-	//progress.Value = 0
-	//go updateTime(progress, player, endUpdateProgress)
+	progress := widget.NewProgressBar()
+	progress.Min = 0
+	progress.Max = 1
+	progress.Value = 0
+	label3 := widget.NewLabel("Time: ")
+	label3.Alignment = fyne.TextAlignCenter
+	go updateTime(progress, player, label3)
 	//endUpdateProgress <- true
 
 	toolbar := widget.NewToolbar(
@@ -188,6 +190,7 @@ func vgui(w fyne.Window) {
 	label.Alignment = fyne.TextAlignCenter
 	label2 := widget.NewLabel("Play Mp4")
 	label2.Alignment = fyne.TextAlignCenter
+
 	browse_file := widget.NewButton("BrowseFile", func() {
 		fd := dialog.NewFileOpen(func(uriReadCloser fyne.URIReadCloser, err error) {
 			path = change(uriReadCloser.URI().Path())
@@ -199,7 +202,7 @@ func vgui(w fyne.Window) {
 		fd.Show()
 	})
 
-	c := container.NewVBox(label, lblVolume, browse_file, label2, toolbar)
+	c := container.NewVBox(label, lblVolume, browse_file, label2, toolbar, progress, label3)
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(1000, 600))
 	w.ShowAndRun()
@@ -225,15 +228,18 @@ func change(data string) (pathc string) {
 	return rep2
 }
 
-//TODO 进度条显示（目前问题：使用进度条时窗口会直接卡住
-func updateTime(p *widget.ProgressBar, vp *vlc.Player, endUpdateProgress <-chan bool) {
+func updateTime(p *widget.ProgressBar, vp *vlc.Player, label *widget.Label) {
 	for {
-		select {
-		case <-endUpdateProgress:
-			return
-		case <-time.After(time.Second):
-			t, _ := vp.MediaPosition()
-			p.SetValue(float64(t))
-		}
+
+		t, _ := vp.MediaPosition()
+		p.SetValue(float64(t))
+		f, _ := vp.MediaTime()
+		k, _ := vp.MediaLength()
+		te := strconv.Itoa(f / 1000)
+		tx := strconv.Itoa(k / 1000)
+		text := te + " // " + tx
+		label.SetText(text)
+		time.Sleep(1 * time.Second)
+
 	}
 }
