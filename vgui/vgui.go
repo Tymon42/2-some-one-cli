@@ -70,7 +70,7 @@ func vgui(w fyne.Window) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	setPlayerWindow(player)
+	//setPlayerWindow(player)
 	statu := make(chan wsclient.Message)
 	go wsc.Read(statu)
 
@@ -80,10 +80,35 @@ func vgui(w fyne.Window) {
 	progress.Min = 0
 	progress.Max = 1
 	progress.Value = 0
+	label := widget.NewLabel("Video Sync")
+	label.Alignment = fyne.TextAlignCenter
+	label2 := widget.NewLabel("Play Mp4")
+	label2.Alignment = fyne.TextAlignCenter
 	label3 := widget.NewLabel("Time: ")
 	label3.Alignment = fyne.TextAlignCenter
 	go updateTime(progress, player, label3)
 	//endUpdateProgress <- true
+
+	urlentry := widget.NewEntry()
+	urlentry.SetPlaceHolder("Input Url")
+	form := widget.NewForm(&widget.FormItem{Text: "URL", Widget: urlentry})
+	form.OnSubmit = func() {
+		playerReleaseMedia(player)
+		if isUrl(urlentry.Text) {
+			if _, err := player.LoadMediaFromURL(urlentry.Text); err != nil {
+				log.Printf("Cannot load selected media: %s\n", err)
+				return
+			}
+			label2.Text = urlentry.Text
+			label2.Refresh()
+		} else {
+			urlentry.SetText("Input URL")
+		}
+	}
+
+	form.OnCancel = func() {
+		urlentry.SetText("Input URL")
+	}
 
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarSpacer(),
@@ -120,11 +145,12 @@ func vgui(w fyne.Window) {
 				lblVolume.Refresh()
 			} else if v == 0 {
 				player.SetVolume(volume)
-				volume = 0
 				t := strconv.Itoa(volume)
 				text := "Volume Now: " + t
 				lblVolume.SetText(text)
 				lblVolume.Refresh()
+				volume = 0
+
 			}
 
 		}),
@@ -186,12 +212,16 @@ func vgui(w fyne.Window) {
 			player.Stop()
 			w.Resize(fyne.NewSize(1000, 600))
 		}),
+		widget.NewToolbarAction(theme.ViewFullScreenIcon(), func() {
+			v, _ := player.IsFullScreen()
+			if v {
+				player.SetFullScreen(false)
+			} else {
+				player.SetFullScreen(true)
+			}
+		}),
 		widget.NewToolbarSpacer(),
 	)
-	label := widget.NewLabel("Video Sync")
-	label.Alignment = fyne.TextAlignCenter
-	label2 := widget.NewLabel("Play Mp4")
-	label2.Alignment = fyne.TextAlignCenter
 
 	browse_file := widget.NewButton("BrowseFile", func() {
 		fd := dialog.NewFileOpen(func(uriReadCloser fyne.URIReadCloser, err error) {
@@ -204,11 +234,11 @@ func vgui(w fyne.Window) {
 			label2.Refresh()
 		}, w)
 		fd.Resize(fyne.NewSize(900, 500))
-		fd.SetFilter(storage.NewExtensionFileFilter([]string{".mp4"}))
+		fd.SetFilter(storage.NewExtensionFileFilter([]string{".mp4", ".mkv"}))
 		fd.Show()
 	})
 
-	c := container.NewVBox(label, lblVolume, browse_file, label2, toolbar, progress, label3)
+	c := container.NewVBox(label, lblVolume, form, browse_file, label2, toolbar, progress, label3)
 	w.SetContent(c)
 	w.Resize(fyne.NewSize(1000, 600))
 	w.ShowAndRun()
@@ -250,6 +280,18 @@ func updateTime(p *widget.ProgressBar, vp *vlc.Player, label *widget.Label) {
 	}
 }
 
-func setPlayerWindow(player *vlc.Player) error {
-	return player.SetXWindow(2000)
+//func setPlayerWindow(player *vlc.Player) error {
+//	return player.SetXWindow(2000)
+//}
+
+func isUrl(urls string) bool {
+
+	re := regexp.MustCompile("(http|https):\\/\\/[\\w\\-_]+(\\.[\\w\\-_]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?")
+	result := re.FindAllStringSubmatch(urls, -1)
+	if result == nil {
+		log.Println("URL不合法")
+		return false
+	}
+	return true
+
 }

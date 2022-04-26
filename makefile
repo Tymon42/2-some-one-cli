@@ -2,7 +2,7 @@ RUMDIR = quorum
 GOARCH = amd64
 QUORUM_BIN_NAME=quorum
 APPDIR = 2SOMEone
-# LIBVLC = libvlc
+LIBVLC = libvlc
 
 # cur_mkfile := $(abspath $(lastword $(MAKEFILE_LIST)))
 # cur_makefile_path=$(dir $(cur_mkfile))
@@ -10,6 +10,9 @@ APPDIR = 2SOMEone
 
 2SOMEone:
 	mkdir ${APPDIR}
+
+Copylibvlc:
+	Xcopy $(LIBVLC)/ ./$(APPDIR)/ /E/H/C/I
 
 quorum.exe:
 	cd $(RUMDIR) && make windows -B
@@ -25,8 +28,15 @@ quorum.exe:
 cli.exe:
 	go build -o ./${APPDIR}/cli.exe main.go
 
-gui.exe:
+gui-nocmd.exe:
 	go build -ldflags="-H windowsgui" -o ./${APPDIR}/gui.exe main.go
+
+gui.exe:
+	go build -o ./${APPDIR}/gui.exe main.go
+
+#go build -ldflags '-s -w -L C:/libvlc -linkmode "external" -extldflags "-static"' -o ./${APPDIR}/gui.exe main.go
+
+build-gui: Copylibvlc gui.exe
 
 build-win: 2SOMEone quorum.exe cli.exe
 
