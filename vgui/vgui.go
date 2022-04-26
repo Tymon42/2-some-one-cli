@@ -15,12 +15,14 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var path string
 var pause bool = false
+var volume int = 0
 
 // 设置环境变量
 func init() {
@@ -53,12 +55,15 @@ func playerReleaseMedia(player *vlc.Player) {
 }
 
 func vgui(w fyne.Window) {
+	//endUpdateProgress := make(chan bool)
+
 	err := vlc.Init("--quiet", "--no-xlib")
 	assertErr(err)
 
 	// Create a new player.
 	player, err := vlc.NewPlayer()
 	assertErr(err)
+	player.SetVolume(80)
 
 	// Create a Websocket Client
 	wsc, err := wsclient.New()
@@ -69,24 +74,77 @@ func vgui(w fyne.Window) {
 	statu := make(chan wsclient.Message)
 	go wsc.Read(statu)
 
+	//lblTimeUsed = widget.NewLabel("")
+	lblVolume := widget.NewLabel("Volume Now: 80")
+	//progress := widget.NewProgressBar()
+	//progress.Min = 0
+	//progress.Max = 1
+	//progress.Value = 0
+	//go updateTime(progress, player, endUpdateProgress)
+	//endUpdateProgress <- true
+
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarSpacer(),
+		widget.NewToolbarAction(theme.VolumeDownIcon(), func() {
+			v, err := player.Volume()
+			assertErr(err)
+			if v <= 100 && v > 0 {
+				player.SetVolume(v - 10)
+				t := strconv.Itoa(v - 10)
+				text := "Volume Now: " + t
+				lblVolume.SetText(text)
+				lblVolume.Refresh()
+			}
+
+		}),
+		widget.NewToolbarAction(theme.VolumeUpIcon(), func() {
+			v, err := player.Volume()
+			assertErr(err)
+			if v < 100 && v >= 0 {
+				player.SetVolume(v + 10)
+				t := strconv.Itoa(v + 10)
+				text := "Volume Now: " + t
+				lblVolume.SetText(text)
+				lblVolume.Refresh()
+			}
+		}),
+		widget.NewToolbarAction(theme.VolumeMuteIcon(), func() {
+			v, err := player.Volume()
+			assertErr(err)
+			if v != 0 {
+				player.SetVolume(volume)
+				volume = v
+				lblVolume.SetText("Volume Now: 0")
+				lblVolume.Refresh()
+			} else if v == 0 {
+				player.SetVolume(volume)
+				volume = 0
+				t := strconv.Itoa(volume)
+				text := "Volume Now: " + t
+				lblVolume.SetText(text)
+				lblVolume.Refresh()
+			}
+
+		}),
 		widget.NewToolbarAction(theme.MediaPlayIcon(), func() {
 			playerReleaseMedia(player)
-
 			if _, err := player.LoadMediaFromPath(path); err != nil {
 				log.Printf("Cannot load selected media: %s\n", err)
 				return
 			}
 			player.Play()
+
+			//endUpdateProgress <- false
 		}),
 		widget.NewToolbarAction(theme.MediaPauseIcon(), func() {
 			if !pause {
 				pause = true
 				player.SetPause(true)
+				//endUpdateProgress <- true
 			} else if pause {
 				pause = false
 				player.SetPause(false)
+				//endUpdateProgress <- false
 			}
 		}),
 		widget.NewToolbarAction(theme.MediaFastRewindIcon(), func() {
@@ -126,7 +184,7 @@ func vgui(w fyne.Window) {
 		}),
 		widget.NewToolbarSpacer(),
 	)
-	label := widget.NewLabel("Video Mp4")
+	label := widget.NewLabel("Video Sync")
 	label.Alignment = fyne.TextAlignCenter
 	label2 := widget.NewLabel("Play Mp4")
 	label2.Alignment = fyne.TextAlignCenter
@@ -136,13 +194,14 @@ func vgui(w fyne.Window) {
 			label2.Text = uriReadCloser.URI().Name()
 			label2.Refresh()
 		}, w)
-		fd.Show()
+		fd.Resize(fyne.NewSize(900, 500))
 		fd.SetFilter(storage.NewExtensionFileFilter([]string{".mp4"}))
+		fd.Show()
 	})
 
-	c := container.NewVBox(label, browse_file, label2, toolbar)
+	c := container.NewVBox(label, lblVolume, browse_file, label2, toolbar)
 	w.SetContent(c)
-	w.Resize(fyne.NewSize(1280, 720))
+	w.Resize(fyne.NewSize(1000, 600))
 	w.ShowAndRun()
 	player.Release()
 	vlc.Release()
@@ -164,4 +223,17 @@ func change(data string) (pathc string) {
 	fmt.Println(rep2)
 
 	return rep2
+}
+
+//TODO 进度条显示（目前问题：使用进度条时窗口会直接卡住
+func updateTime(p *widget.ProgressBar, vp *vlc.Player, endUpdateProgress <-chan bool) {
+	for {
+		select {
+		case <-endUpdateProgress:
+			return
+		case <-time.After(time.Second):
+			t, _ := vp.MediaPosition()
+			p.SetValue(float64(t))
+		}
+	}
 }
