@@ -1,0 +1,8 @@
+title = "cli"
+
+[peerConfig]
+peername = "user2"
+peerport = 7004
+peerapiport = 8004
+keystore_pw = "123"
+peer = "/ip4/94.23.17.189/tcp/10666/p2p/16Uiu2HAmGTcDnhj3KVQUwVx8SGLyKBXQwfAxNayJdEwfsnUYKK4u"
