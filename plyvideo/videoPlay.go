@@ -14,8 +14,8 @@ import (
 //PlayVideo : 	Function for video playback
 func PlayVideo(path, name string) {
 
-	wsc,err:=wsclient.New()
-	if err!=nil{
+	wsc, err := wsclient.New()
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -82,7 +82,7 @@ func PlayVideo(path, name string) {
 	ctrlList.Border = true
 
 	// ui.Render(NameBox, ctrlList)
-	grid:=ui.NewGrid()
+	grid := ui.NewGrid()
 	termWidth, termHeight := ui.TerminalDimensions()
 	grid.SetRect(0, 0, termWidth, termHeight)
 
@@ -103,9 +103,9 @@ func PlayVideo(path, name string) {
 			player.TogglePause()
 			break
 		case "r":
-			Statu := <- statu
+			Statu := <-statu
 			nowTime := time.Now().UnixNano() / 1e6
-			settime := int(nowTime - Statu.Ts) + (Statu.MediaTime)
+			settime := int(nowTime-Statu.Ts) + (Statu.MediaTime)
 			player.SetMediaTime(settime)
 			break
 		case "u":
