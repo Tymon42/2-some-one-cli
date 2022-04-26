@@ -14,8 +14,8 @@ import (
 //PlayVideo : 	Function for video playback
 func PlayVideo(path, name string) {
 
-	wsc,err:=wsclient.New()
-	if err!=nil{
+	wsc, err := wsclient.New()
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -82,7 +82,7 @@ func PlayVideo(path, name string) {
 	ctrlList.Border = true
 
 	// ui.Render(NameBox, ctrlList)
-	grid:=ui.NewGrid()
+	grid := ui.NewGrid()
 	termWidth, termHeight := ui.TerminalDimensions()
 	grid.SetRect(0, 0, termWidth, termHeight)
 
@@ -103,9 +103,9 @@ func PlayVideo(path, name string) {
 			player.TogglePause()
 			break
 		case "r":
-			Statu := <- statu
+			Statu := <-statu
 			nowTime := time.Now().UnixNano() / 1e6
-			settime := int(nowTime - Statu.Ts) + (Statu.MediaTime)
+			settime := int(nowTime-Statu.Ts) + (Statu.MediaTime)
 			player.SetMediaTime(settime)
 			break
 		case "u":
@@ -158,6 +158,63 @@ func PlayVideo(path, name string) {
 		log.Fatal(err)
 	}
 	defer manager.Detach(eventID)
+
+	<-quit
+}
+
+func VideoPlay(path string) {
+
+	//wsc, err := wsclient.New()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//statu := make(chan wsclient.Message)
+	//go wsc.Read(statu)
+
+	if err := vlc.Init("--quiet"); err != nil {
+		log.Fatal(err)
+	}
+	defer vlc.Release()
+
+	player, err := vlc.NewPlayer()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		player.Stop()
+		player.Release()
+	}()
+
+	media, err := player.LoadMediaFromPath(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer media.Release()
+
+	// Retrieve player event manager.
+	manager, err := player.EventManager()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Register the media end reached event with the event manager.
+	quit := make(chan struct{})
+	eventCallback := func(event vlc.Event, userData interface{}) {
+		close(quit)
+	}
+
+	eventID, err := manager.Attach(vlc.MediaPlayerEndReached, eventCallback, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer manager.Detach(eventID)
+
+	// Start playing the media.
+	err = player.Play()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	<-quit
 }

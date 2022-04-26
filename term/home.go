@@ -40,7 +40,7 @@ func Home() {
 	title.Border = false
 	title.TextStyle.Fg = ui.ColorBlue
 
-	permitPane := widgets.NewTabPane("Play a song","Play a video", "Quit")
+	permitPane := widgets.NewTabPane("Play a song", "Play a video", "Quit")
 	permitPane.PaddingTop = 1
 	// permitPane.SetRect(40, 10, 60, 13)
 	permitPane.Border = true
@@ -50,7 +50,7 @@ func Home() {
 		case 0:
 			Play("D:\\8.mp3", "D:\\8.mp3", "Audio")
 		case 1:
-			Play("C:\\Users\\why00\\Videos\\aa\\aa.mp4", "Time Sync", "Video")
+			Play("D:\\TEMP\\aa.mp4", "Time Sync", "Video")
 		case 2:
 			ui.Clear()
 			ui.Close()

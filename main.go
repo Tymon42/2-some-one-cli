@@ -1,12 +1,9 @@
 package main
 
-import (
-	"2-some-one-cli/term"
-	// "2-some-one-cli/util"
-)
-
+import "2-some-one-cli/vgui"
 
 func main() {
 	// go util.RunPeer()
-	term.Home()
+	//term.Home()
+	vgui.VguiStart()
 }

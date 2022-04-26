@@ -25,6 +25,9 @@ quorum.exe:
 cli.exe:
 	go build -o ./${APPDIR}/cli.exe main.go
 
+gui.exe:
+	go build -o ./${APPDIR}/gui.exe main.go
+
 build-win: 2SOMEone quorum.exe cli.exe
 
 clean-win:
