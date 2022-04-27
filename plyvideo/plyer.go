@@ -25,57 +25,103 @@ func NewPlayer() (*VlcPlayer, error) {
 	return &VlcPlayer{VP: player}, nil
 }
 
-func (p VlcPlayer) Play() (err error) {
-	err = p.VP.Play()
-	util.AssertErr(err)
-	return nil
+func (p VlcPlayer) Play() {
+	if media, _ := p.VP.Media(); media != nil {
+		p.VP.Play()
+
+	} else {
+		log.Printf("Cancened")
+		return
+	}
 }
 
+//if media, _ := p.VP.Media(); media != nil {
+//
+//} else {
+//log.Printf("Cancened")
+//return
+//}
+
 func (p VlcPlayer) Close() (err error) {
-	err = p.VP.Stop()
-	util.AssertErr(err)
+	if media, _ := p.VP.Media(); media != nil {
+		err = p.VP.Stop()
+		util.AssertErr(err)
+	} else {
+		log.Printf("Cancened")
+		return
+	}
+
 	return nil
 }
 
 func (p VlcPlayer) UploadTime(wsc *wsclient.WsClient) {
-	nowTime := time.Now().UnixNano() / 1e6
-	sec, err := p.VP.MediaTime()
-	util.AssertErr(err)
-	var msg wsclient.Message
-	msg.MediaTime = sec
-	msg.Ts = nowTime
-	wsc.Writer(msg)
+	if media, _ := p.VP.Media(); media != nil {
+		nowTime := time.Now().UnixNano() / 1e6
+		sec, err := p.VP.MediaTime()
+		util.AssertErr(err)
+		var msg wsclient.Message
+		msg.MediaTime = sec
+		msg.Ts = nowTime
+		wsc.Writer(msg)
+	} else {
+		log.Printf("Cancened")
+		return
+	}
+
 }
 
 func (p VlcPlayer) SyncTime(statu chan wsclient.Message) {
-	Statu := <-statu
-	nowTime := time.Now().UnixNano() / 1e6
-	settime := int(nowTime-Statu.Ts) + (Statu.MediaTime)
-	p.VP.SetMediaTime(settime)
+	if media, _ := p.VP.Media(); media != nil {
+		Statu := <-statu
+		nowTime := time.Now().UnixNano() / 1e6
+		settime := int(nowTime-Statu.Ts) + (Statu.MediaTime)
+		p.VP.SetMediaTime(settime)
+	} else {
+		log.Printf("Cancened")
+		return
+	}
+
 }
 
 func (p VlcPlayer) Pause() {
-	if p.VP.IsPlaying() {
-		err := p.VP.SetPause(true)
-		util.AssertErr(err)
+	if media, _ := p.VP.Media(); media != nil {
+		if p.VP.IsPlaying() {
+			err := p.VP.SetPause(true)
+			util.AssertErr(err)
+		} else {
+			err := p.VP.SetPause(false)
+			util.AssertErr(err)
+		}
 	} else {
-		err := p.VP.SetPause(false)
-		util.AssertErr(err)
+		log.Printf("Cancened")
+		return
 	}
-	return
+
 }
 
 func (p VlcPlayer) Forward() {
-	sec, err := p.VP.MediaTime()
-	util.AssertErr(err)
-	p.VP.SetMediaTime(sec + 10000)
+	if media, _ := p.VP.Media(); media != nil {
+		sec, err := p.VP.MediaTime()
+		util.AssertErr(err)
+		p.VP.SetMediaTime(sec + 10000)
+	} else {
+		log.Printf("Cancened")
+		return
+	}
+
 }
 
 func (p VlcPlayer) Rewind() {
-	sec, err := p.VP.MediaTime()
-	util.AssertErr(err)
-	p.VP.SetMediaTime(sec - 10000)
-	p.VP.Play()
+	if media, _ := p.VP.Media(); media != nil {
+		sec, err := p.VP.MediaTime()
+		util.AssertErr(err)
+		p.VP.SetMediaTime(sec - 10000)
+		p.VP.Play()
+	} else {
+		log.Printf("Cancened")
+		return
+	}
+
 }
 
 func (p VlcPlayer) DownVolume() (text string) {
@@ -144,12 +190,18 @@ func (p VlcPlayer) playerReleaseMedia() {
 }
 
 func (p VlcPlayer) FullScreen() {
-	v, _ := p.VP.IsFullScreen()
-	if v {
-		p.VP.SetFullScreen(false)
+	if media, _ := p.VP.Media(); media != nil {
+		v, _ := p.VP.IsFullScreen()
+		if v {
+			p.VP.SetFullScreen(false)
+		} else {
+			p.VP.SetFullScreen(true)
+		}
 	} else {
-		p.VP.SetFullScreen(true)
+		log.Printf("Cancened")
+		return
 	}
+
 }
 
 func (p VlcPlayer) Release() {

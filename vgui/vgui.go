@@ -53,9 +53,9 @@ func vgui(w fyne.Window) {
 	go wsc.Read(statue)
 
 	lblVolume := widget.NewLabel("Volume Now: 80")
-	label := widget.NewLabel("Video Sync")
+	label := widget.NewLabel("Media Sync")
 	label.Alignment = fyne.TextAlignCenter
-	label2 := widget.NewLabel("Play Mp4")
+	label2 := widget.NewLabel("Play Media")
 	label2.Alignment = fyne.TextAlignCenter
 	label3 := widget.NewLabel("Time: ")
 	label3.Alignment = fyne.TextAlignCenter
@@ -125,11 +125,16 @@ func setToolbar(player *plyvideo.VlcPlayer, lblVolume *widget.Label, w fyne.Wind
 			lblVolume.Refresh()
 		}),
 		widget.NewToolbarAction(theme.MediaPlayIcon(), func() {
-			err := player.Load(path)
-			util.AssertErr(err)
-			player.Play()
-			util.AssertErr(err)
-			w.Resize(fyne.NewSize(500, 250))
+			if len(path) != 0 {
+				err := player.Load(path)
+				util.AssertErr(err)
+				player.Play()
+				util.AssertErr(err)
+				w.Resize(fyne.NewSize(500, 250))
+			} else {
+				return
+			}
+
 		}),
 		widget.NewToolbarAction(theme.MediaPauseIcon(), func() {
 			player.Pause()

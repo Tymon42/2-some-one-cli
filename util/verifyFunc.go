@@ -31,14 +31,14 @@ func IsUrl(urls string) bool {
 
 }
 
-func ConvPath(data string) (pathc string) {
+func ConvPath(data string) (rep2 string) {
 	re3, _ := regexp.Compile("/")
 	rep := re3.ReplaceAllStringFunc(data, strings.ToUpper)
 	fmt.Println(rep)
-	rep2 := re3.ReplaceAllString(data, "\\\\")
+	rep2 = re3.ReplaceAllString(data, "\\\\")
 	fmt.Println(rep2)
 
-	return rep2
+	return
 }
 
 func ResolveTime(seconds int) (minute int, sec int) {
