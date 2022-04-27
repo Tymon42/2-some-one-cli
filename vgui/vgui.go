@@ -1,8 +1,9 @@
 package vgui
 
 import (
+	"2-some-one-cli/plyvideo"
+	"2-some-one-cli/util"
 	"2-some-one-cli/wsclient"
-	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -14,15 +15,11 @@ import (
 	"github.com/flopp/go-findfont"
 	"log"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
 
 var path string
-var pause bool = false
-var volume int = 0
 
 // 设置环境变量
 func init() {
@@ -35,70 +32,66 @@ func init() {
 	}
 }
 
-func assertErr(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
-}
+var volume int = 0
 
-func assertConv(ok bool) {
-	if !ok {
-		log.Panic("invalid widget conversion")
-	}
-}
-
-func playerReleaseMedia(player *vlc.Player) {
-	player.Stop()
-	if media, _ := player.Media(); media != nil {
-		media.Release()
-	}
+func VguiStart() {
+	a := app.NewWithID("2SOMEone")
+	a.Settings().SetTheme(theme.LightTheme())
+	w := a.NewWindow("2SOMEone")
+	vgui(w)
 }
 
 func vgui(w fyne.Window) {
-	//endUpdateProgress := make(chan bool)
-
-	err := vlc.Init("--quiet", "--no-xlib")
-	assertErr(err)
-
-	// Create a new player.
-	player, err := vlc.NewPlayer()
-	assertErr(err)
-	player.SetVolume(80)
+	player, err := plyvideo.NewPlayer()
 
 	// Create a Websocket Client
 	wsc, err := wsclient.New()
 	if err != nil {
 		log.Fatal(err)
 	}
-	//setPlayerWindow(player)
-	statu := make(chan wsclient.Message)
-	go wsc.Read(statu)
+	statue := make(chan wsclient.Message)
+	go wsc.Read(statue)
 
-	//lblTimeUsed = widget.NewLabel("")
 	lblVolume := widget.NewLabel("Volume Now: 80")
-	progress := widget.NewProgressBar()
-	progress.Min = 0
-	progress.Max = 1
-	progress.Value = 0
 	label := widget.NewLabel("Video Sync")
 	label.Alignment = fyne.TextAlignCenter
 	label2 := widget.NewLabel("Play Mp4")
 	label2.Alignment = fyne.TextAlignCenter
 	label3 := widget.NewLabel("Time: ")
 	label3.Alignment = fyne.TextAlignCenter
-	go updateTime(progress, player, label3)
-	//endUpdateProgress <- true
 
+	browseFile := setBrowseFile(w, label2)
+	form := setUrlform(player, label2)
+	toolbar := setToolbar(player, lblVolume, w, wsc, statue)
+	progress := setProgress()
+
+	go updateTime(progress, player, label3)
+
+	c := container.NewVBox(label, lblVolume, form, browseFile, label2, toolbar, progress, label3)
+	w.SetContent(c)
+	w.Resize(fyne.NewSize(1000, 600))
+	w.ShowAndRun()
+	player.Release()
+	err = vlc.Release()
+	util.AssertErr(err)
+}
+
+func setProgress() (progress *widget.ProgressBar) {
+	progress = widget.NewProgressBar()
+	progress.Min = 0
+	progress.Max = 1
+	progress.Value = 0
+	return
+}
+
+func setUrlform(player *plyvideo.VlcPlayer, label2 *widget.Label) (form *widget.Form) {
 	urlentry := widget.NewEntry()
 	urlentry.SetPlaceHolder("Input Url")
-	form := widget.NewForm(&widget.FormItem{Text: "URL", Widget: urlentry})
+	form = widget.NewForm(&widget.FormItem{Text: "URL", Widget: urlentry})
 	form.OnSubmit = func() {
-		playerReleaseMedia(player)
-		if isUrl(urlentry.Text) {
-			if _, err := player.LoadMediaFromURL(urlentry.Text); err != nil {
-				log.Printf("Cannot load selected media: %s\n", err)
-				return
-			}
+		if util.IsUrl(urlentry.Text) {
+			err := player.Load(urlentry.Text)
+			util.AssertErr(err)
 			label2.Text = urlentry.Text
 			label2.Refresh()
 		} else {
@@ -109,127 +102,71 @@ func vgui(w fyne.Window) {
 	form.OnCancel = func() {
 		urlentry.SetText("Input URL")
 	}
+	return
+}
 
-	toolbar := widget.NewToolbar(
+func setToolbar(player *plyvideo.VlcPlayer, lblVolume *widget.Label, w fyne.Window, wsc *wsclient.WsClient, statue chan wsclient.Message) (toolbar *widget.Toolbar) {
+	toolbar = widget.NewToolbar(
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.VolumeDownIcon(), func() {
-			v, err := player.Volume()
-			assertErr(err)
-			if v <= 100 && v > 0 {
-				player.SetVolume(v - 10)
-				t := strconv.Itoa(v - 10)
-				text := "Volume Now: " + t
-				lblVolume.SetText(text)
-				lblVolume.Refresh()
-			}
-
+			text := player.DownVolume()
+			lblVolume.SetText(text)
+			lblVolume.Refresh()
 		}),
 		widget.NewToolbarAction(theme.VolumeUpIcon(), func() {
-			v, err := player.Volume()
-			assertErr(err)
-			if v < 100 && v >= 0 {
-				player.SetVolume(v + 10)
-				t := strconv.Itoa(v + 10)
-				text := "Volume Now: " + t
-				lblVolume.SetText(text)
-				lblVolume.Refresh()
-			}
+			text := player.UpVolume()
+			lblVolume.SetText(text)
+			lblVolume.Refresh()
 		}),
 		widget.NewToolbarAction(theme.VolumeMuteIcon(), func() {
-			v, err := player.Volume()
-			assertErr(err)
-			if v != 0 {
-				player.SetVolume(volume)
-				volume = v
-				lblVolume.SetText("Volume Now: 0")
-				lblVolume.Refresh()
-			} else if v == 0 {
-				player.SetVolume(volume)
-				t := strconv.Itoa(volume)
-				text := "Volume Now: " + t
-				lblVolume.SetText(text)
-				lblVolume.Refresh()
-				volume = 0
-
-			}
-
+			text, volumeNew := player.MuteVolume(volume)
+			volume = volumeNew
+			lblVolume.SetText(text)
+			lblVolume.Refresh()
 		}),
 		widget.NewToolbarAction(theme.MediaPlayIcon(), func() {
-			playerReleaseMedia(player)
-			if _, err := player.LoadMediaFromPath(path); err != nil {
-				log.Printf("Cannot load selected media: %s\n", err)
-				return
-			}
+			err := player.Load(path)
+			util.AssertErr(err)
 			player.Play()
+			util.AssertErr(err)
 			w.Resize(fyne.NewSize(500, 250))
-
-			//endUpdateProgress <- false
 		}),
 		widget.NewToolbarAction(theme.MediaPauseIcon(), func() {
-			if !pause {
-				pause = true
-				player.SetPause(true)
-				//endUpdateProgress <- true
-			} else if pause {
-				pause = false
-				player.SetPause(false)
-				//endUpdateProgress <- false
-			}
+			player.Pause()
 		}),
 		widget.NewToolbarAction(theme.MediaFastRewindIcon(), func() {
-			sec, err := player.MediaTime()
-			if err != nil {
-				log.Fatal(err)
-			}
-			player.SetMediaTime(sec - 10000)
-			player.Play()
+			player.Rewind()
 		}),
 		widget.NewToolbarAction(theme.MediaFastForwardIcon(), func() {
-			sec, err := player.MediaTime()
-			if err != nil {
-				log.Fatal(err)
-			}
-			player.SetMediaTime(sec + 10000)
+			player.Forward()
 		}),
 		widget.NewToolbarAction(theme.UploadIcon(), func() {
-			nowTime := time.Now().UnixNano() / 1e6
-			sec, err := player.MediaTime()
-			if err != nil {
-				log.Fatal(err)
-			}
-			var msg wsclient.Message
-			msg.MediaTime = sec
-			msg.Ts = nowTime
-			wsc.Writer(msg)
+			player.UploadTime(wsc)
 		}),
 		widget.NewToolbarAction(theme.DownloadIcon(), func() {
-			Statu := <-statu
-			nowTime := time.Now().UnixNano() / 1e6
-			settime := int(nowTime-Statu.Ts) + (Statu.MediaTime)
-			player.SetMediaTime(settime)
+			player.SyncTime(statue)
 		}),
 		widget.NewToolbarAction(theme.MediaStopIcon(), func() {
-			player.Stop()
+			err := player.Close()
+			util.AssertErr(err)
 			w.Resize(fyne.NewSize(1000, 600))
 		}),
 		widget.NewToolbarAction(theme.ViewFullScreenIcon(), func() {
-			v, _ := player.IsFullScreen()
-			if v {
-				player.SetFullScreen(false)
-			} else {
-				player.SetFullScreen(true)
-			}
+			player.FullScreen()
 		}),
 		widget.NewToolbarSpacer(),
 	)
+	return
+}
 
-	browse_file := widget.NewButton("BrowseFile", func() {
+func setBrowseFile(w fyne.Window, label2 *widget.Label) (browseFile *widget.Button) {
+	browseFile = widget.NewButton("BrowseFile", func() {
 		fd := dialog.NewFileOpen(func(uriReadCloser fyne.URIReadCloser, err error) {
 			if uriReadCloser == nil {
 				log.Println("Cancelled")
 				return
 			}
-			path = change(uriReadCloser.URI().Path())
+			path = util.ConvPath(uriReadCloser.URI().Path())
 			label2.Text = uriReadCloser.URI().Name()
 			label2.Refresh()
 		}, w)
@@ -237,61 +174,14 @@ func vgui(w fyne.Window) {
 		fd.SetFilter(storage.NewExtensionFileFilter([]string{".mp4", ".mkv"}))
 		fd.Show()
 	})
-
-	c := container.NewVBox(label, lblVolume, form, browse_file, label2, toolbar, progress, label3)
-	w.SetContent(c)
-	w.Resize(fyne.NewSize(1000, 600))
-	w.ShowAndRun()
-	player.Release()
-	vlc.Release()
+	return
 }
 
-func VguiStart() {
-	a := app.NewWithID("2SOMEone")
-	a.Settings().SetTheme(theme.LightTheme())
-	w := a.NewWindow("2SOMEone")
-	vgui(w)
-
-}
-
-func change(data string) (pathc string) {
-	re3, _ := regexp.Compile("/")
-	rep := re3.ReplaceAllStringFunc(data, strings.ToUpper)
-	fmt.Println(rep)
-	rep2 := re3.ReplaceAllString(data, "\\\\")
-	fmt.Println(rep2)
-
-	return rep2
-}
-
-func updateTime(p *widget.ProgressBar, vp *vlc.Player, label *widget.Label) {
+func updateTime(p *widget.ProgressBar, player *plyvideo.VlcPlayer, label *widget.Label) {
 	for {
-
-		t, _ := vp.MediaPosition()
-		p.SetValue(float64(t))
-		f, _ := vp.MediaTime()
-		k, _ := vp.MediaLength()
-		te := strconv.Itoa(f / 1000)
-		tx := strconv.Itoa(k / 1000)
-		text := te + " // " + tx
+		text, ps := player.TimeNow()
+		p.SetValue(ps)
 		label.SetText(text)
 		time.Sleep(1 * time.Second)
-
 	}
-}
-
-//func setPlayerWindow(player *vlc.Player) error {
-//	return player.SetXWindow(2000)
-//}
-
-func isUrl(urls string) bool {
-
-	re := regexp.MustCompile("(http|https):\\/\\/[\\w\\-_]+(\\.[\\w\\-_]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?")
-	result := re.FindAllStringSubmatch(urls, -1)
-	if result == nil {
-		log.Println("URL不合法")
-		return false
-	}
-	return true
-
 }
